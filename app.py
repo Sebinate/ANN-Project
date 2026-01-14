@@ -7,25 +7,18 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
 
 model = load_model('artifacts/model/model.keras')
 
-preprocessing_files = os.listdir("artifacts/preprocessing")
+with open('artifacts/preprocessing/gender_encoder.pkl', 'rb') as file:
+    gender_encoder = pickle.load(file)
 
-def load_files(files) -> list:
-    """
-    Returns preprocessing files in [gender encoder, geography encoder, scaler]
-    """
-    preprocessors = []
-    for i in files:
-        with open(os.path.join('artifacts/preprocessing', i), 'rb') as file:
-            preprocessors.append(pickle.load(file))
-    
-    print(preprocessors)
-    return preprocessors
+with open('artifacts/preprocessing/geography_encoder.pkl', 'rb') as file:
+    geography_encoder = pickle.load(file)
 
-preprocessors = load_files(preprocessing_files)
+with open('artifacts/preprocessing/scaler.pkl', 'rb') as file:
+    scaler = pickle.load(file)
 
 st.title("Customer Churn Prediction")
-geo = st.selectbox('Geography', preprocessors[1].categories_[0])
-gender = st.selectbox('Gender', preprocessors[0].classes_)
+geo = st.selectbox('Geography', geography_encoder.categories_[0])
+gender = st.selectbox('Gender', gender_encoder.classes_)
 age = st.slider('Age', 18, 99)
 balance = st.number_input('Balance')
 cs = st.number_input('Credit Score')
@@ -51,13 +44,13 @@ input_data = {
 
 sample_data = pd.DataFrame([input_data])
 
-geo_sample = pd.DataFrame(preprocessors[1].transform(sample_data[["Geography"]]), columns = preprocessors[1].get_feature_names_out())
+geo_sample = pd.DataFrame(geography_encoder.transform(sample_data[["Geography"]]), columns = geography_encoder.get_feature_names_out())
 
 sample_data = pd.concat([sample_data, geo_sample], axis = 1).drop("Geography", axis = 1)
 
-sample_data['Gender'] = preprocessors[0].transform(sample_data['Gender'])
+sample_data['Gender'] = gender_encoder.transform(sample_data['Gender'])
 
-sample_data = preprocessors[2].transform(sample_data)
+sample_data = scaler.transform(sample_data)
 
 churn_probability = model.predict(sample_data)[0][0]
 
